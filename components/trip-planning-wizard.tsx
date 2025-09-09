@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -28,6 +28,7 @@ interface TripPreferences {
 
 export function TripPlanningWizard() {
   const [step, setStep] = useState(1)
+  const [isClient, setIsClient] = useState(false)
   const [preferences, setPreferences] = useState<TripPreferences>({
     destination: "",
     startDate: undefined,
@@ -57,6 +58,10 @@ export function TripPlanningWizard() {
         : [...prev.interests, interestId],
     }))
   }
+
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
 
   const renderStep1 = () => (
     <Card>
@@ -91,54 +96,78 @@ export function TripPlanningWizard() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Label>Start Date</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !preferences.startDate && "text-muted-foreground",
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {preferences.startDate ? format(preferences.startDate, "PPP") : "Pick start date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={preferences.startDate}
-                  onSelect={(date) => setPreferences((prev) => ({ ...prev, startDate: date }))}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
+            {isClient ? (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !preferences.startDate && "text-muted-foreground",
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {preferences.startDate ? format(preferences.startDate, "PPP") : "Pick start date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={preferences.startDate}
+                    onSelect={(date) => setPreferences((prev) => ({ ...prev, startDate: date }))}
+                    disabled={(date) => date < new Date()}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            ) : (
+              <Button
+                variant="outline"
+                className="w-full justify-start text-left font-normal text-muted-foreground bg-transparent"
+                disabled
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                Loading...
+              </Button>
+            )}
           </div>
 
           <div>
             <Label>End Date</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !preferences.endDate && "text-muted-foreground",
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {preferences.endDate ? format(preferences.endDate, "PPP") : "Pick end date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={preferences.endDate}
-                  onSelect={(date) => setPreferences((prev) => ({ ...prev, endDate: date }))}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
+            {isClient ? (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !preferences.endDate && "text-muted-foreground",
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {preferences.endDate ? format(preferences.endDate, "PPP") : "Pick end date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={preferences.endDate}
+                    onSelect={(date) => setPreferences((prev) => ({ ...prev, endDate: date }))}
+                    disabled={(date) => date < new Date() || (preferences.startDate && date < preferences.startDate)}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            ) : (
+              <Button
+                variant="outline"
+                className="w-full justify-start text-left font-normal text-muted-foreground bg-transparent"
+                disabled
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                Loading...
+              </Button>
+            )}
           </div>
         </div>
 
@@ -284,7 +313,7 @@ export function TripPlanningWizard() {
             </p>
             <p>
               <strong>Duration:</strong>{" "}
-              {preferences.startDate && preferences.endDate
+              {preferences.startDate && preferences.endDate && isClient
                 ? `${format(preferences.startDate, "MMM dd")} - ${format(preferences.endDate, "MMM dd, yyyy")}`
                 : "Dates not selected"}
             </p>
@@ -321,7 +350,6 @@ export function TripPlanningWizard() {
 
   return (
     <div className="space-y-6">
-      {/* Progress Indicator */}
       <div className="flex items-center justify-center space-x-4 mb-8">
         {[1, 2, 3].map((stepNum) => (
           <div key={stepNum} className="flex items-center">
@@ -338,12 +366,10 @@ export function TripPlanningWizard() {
         ))}
       </div>
 
-      {/* Step Content */}
       {step === 1 && renderStep1()}
       {step === 2 && renderStep2()}
       {step === 3 && renderStep3()}
 
-      {/* Navigation Buttons */}
       <div className="flex justify-between">
         <Button variant="outline" onClick={() => setStep(step - 1)} disabled={step === 1}>
           Previous
@@ -356,7 +382,6 @@ export function TripPlanningWizard() {
         ) : (
           <Button
             onClick={() => {
-              // Handle trip creation
               console.log("Creating trip with preferences:", preferences)
             }}
             disabled={!canProceed()}
